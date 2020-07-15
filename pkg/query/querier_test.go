@@ -1246,6 +1246,13 @@ func TestDedupSeriesIterator(t *testing.T) {
 			b:   []sample{{10100, 2}, {20100, 2}, {30100, 2}, {40100, 2}, {50100, 2}, {60100, 2}},
 			exp: []sample{{10000, 1}, {20000, 1}, {30000, 1}, {50100, 2}, {60100, 2}},
 		},
+		{
+			// Simulate Prom with 1m scrape interval scraping 30s apart. This should start with replica-1 until a brief outage,
+			// then switch to replica-2 after not seeing a value for 2 * interval = 120s.
+			a:   []sample{{0, 1}, {60000, 3}, {120000, 5} /* outage for 3 minutes */, {300000, 11}},
+			b:   []sample{{30000, 2}, {90000, 5}, {150000, 6}, {210000, 8}, {270000, 10}, {330000, 12}},
+			exp: []sample{{0, 1}, {60000, 3}, {120000, 5}, {270000, 10}, {330000, 12}},
+		},
 	}
 	for i, c := range cases {
 		t.Logf("case %d:", i)
